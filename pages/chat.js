@@ -87,7 +87,7 @@ export default function ChatPage() {
             styleSheet={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 // backgroundColor: appConfig.theme.colors.primary[500],
-                backgroundImage: `url(https://images6.alphacoders.com/109/1090143.jpg)`,
+                backgroundImage: `url(https://images6.alphacoders.com/111/1115052.jpg)`,
                 backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundBlendMode: 'multiply',
                 color: appConfig.theme.colors.neutrals['000']
             }}
