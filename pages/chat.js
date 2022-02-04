@@ -1,28 +1,37 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
-import { createClient } from '@supabase/supabase-js';
 import React from 'react';
 import appConfig from '../config.json';
+import { useRouter } from 'next/router';
+import { createClient } from '@supabase/supabase-js';
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker';
 
+// Como fazer AJAX: https://medium.com/@omariosouto/entendendo-como-fazer-ajax-com-a-fetchapi-977ff20da3c6
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzkyNzc3OCwiZXhwIjoxOTU5NTAzNzc4fQ.ur7kVIBiFP66QkNae2b5VKaqF-hWbw9O4ivWvtv3oEs';
 const SUPABASE_URL = 'https://ldmodhfezkagiytxccnf.supabase.co';
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function escultaMensagensEmTempoReal(adicionaMensagem) {
+    return supabaseClient
+        .from('mensagens')
+        .on('INSERT', (respostaLive) => {
+            // console.log('Houve uma nova mensagem');
+            adicionaMensagem(respostaLive.new);
+        })
+        .subscribe();
+}
 
 export default function ChatPage() {
-    /*
-        // Usuário
-        - Usuário digita no campo textarea
-        - Aperta enter para enviar
-        - Tem que adicionar o texto na listagem
-        
-        // Dev
-        - [x] Campo criado
-        - [x] Vamos usar o onChange usa o useState (ter if para caso seja enter pra limpar a variavel)
-        - [ ] Lista de mensagens 
-    */
-    // Sua lógica vai aqui
+
+    const roteamento = useRouter();
+    const usuarioLogado = roteamento.query.username;
     const [mensagem, setMensagem] = React.useState('');
-    const [listaDeMensagens, setListaDeMensagens] = React.useState([]);
+    const [listaDeMensagens, setListaDeMensagens] = React.useState([
+        // {
+        //     id: 1,
+        //     de: 'luciancardoso',
+        //     texto: ':sticker: https://c.tenor.com/TKpmh4WFEsAAAAAC/alura-gaveta-filmes.gif',
+        // }
+    ]);
 
     React.useEffect(() => {
         supabaseClient
@@ -30,16 +39,33 @@ export default function ChatPage() {
             .select('*')
             .order('id', { ascending: false })
             .then(({ data }) => {
-                console.log('Dados da consulta:', data);
+                // console.log('Dados da consulta:', data);
                 setListaDeMensagens(data);
             });
+
+        escultaMensagensEmTempoReal((novaMensagem) => {
+            console.log('Nova Mensagem', novaMensagem);
+            console.log('listaDeMensagens:', listaDeMensagens);
+            // setListaDeMensagens([
+            //     novaMensagem,
+            //     ...listaDeMensagens
+            // ])
+            setListaDeMensagens((valorAtualDaLista) => {
+                console.log('listaDeMensagens:', listaDeMensagens);
+
+                return [
+                    novaMensagem,
+                    ...valorAtualDaLista,
+                ]
+            });
+        });
     }, []);
 
     // ./Sua lógica vai aqui
     function handleNovaMensagem(novaMensagem) {
         const mensagem = {
             // id: listaDeMensagens.length,
-            de: 'luciancardoso',
+            de: usuarioLogado,
             texto: novaMensagem,
         };
 
@@ -50,11 +76,7 @@ export default function ChatPage() {
                 mensagem
             ])
             .then(({ data }) => {
-                console.log('Criando mensagem: ', data);
-                setListaDeMensagens([
-                    data[0],
-                    ...listaDeMensagens,
-                ]);
+                // console.log('Criando mensagem: ', data);
             });
 
         setMensagem('');
@@ -129,7 +151,7 @@ export default function ChatPage() {
                                     handleNovaMensagem(mensagem);
                                 }
                             }}
-                            placeholder="Insira sua mensagem aqui..."
+                            placeholder="Digite sua mensagem..."
                             type="textarea"
                             styleSheet={{
                                 width: '100%',
@@ -140,6 +162,13 @@ export default function ChatPage() {
                                 backgroundColor: appConfig.theme.colors.neutrals[800],
                                 marginRight: '12px',
                                 color: appConfig.theme.colors.neutrals[200],
+                            }}
+                        />
+                        {/* CALLBACK */}
+                        <ButtonSendSticker
+                            onStickerClick={(sticker) => {
+                                console.log('Salva esse sticker no banco', sticker);
+                                handleNovaMensagem(':sticker: ' + sticker);
                             }}
                         />
                     </Box>
@@ -169,7 +198,7 @@ function Header() {
 
 function MessageList(props) {
     // console.log('MessageList', props);
-    console.log(props.listaDeMensagens);
+    console.log(props);
     return (
         <Box
             tag="ul"
@@ -200,12 +229,18 @@ function MessageList(props) {
                         <Box
                             styleSheet={{
                                 marginBottom: '8px',
+                                // width: '100%',
+                                // marginBottom: '10px',
+                                // display: 'flex',
+                                // alignItems: 'center',
+                                // justifyContent: 'space-between'
                             }}
                         >
+                            
                             <Image
                                 styleSheet={{
-                                    width: '20px',
-                                    height: '20px',
+                                    width: '50px',
+                                    height: '50px',
                                     borderRadius: '50%',
                                     display: 'inline-block',
                                     marginRight: '8px',
@@ -226,7 +261,20 @@ function MessageList(props) {
                                 {(new Date().toLocaleDateString())}
                             </Text>
                         </Box>
-                        {mensagem.texto}
+                        {/* Condicional: {mensagem.texto.startsWith(':sticker:').toString()} */}
+                        {mensagem.texto.startsWith(':sticker:')
+                            ? (
+                                <Image src={mensagem.texto.replace(':sticker:', '')}
+                                    styleSheet={{
+                                        width: '150px',
+                                    }}
+                                />
+                            )
+                            : (
+                                mensagem.texto
+                            )}
+
+                        {/* {mensagem.texto} */}
                     </Text>
                 );
             })}
